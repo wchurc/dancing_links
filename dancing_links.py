@@ -118,17 +118,23 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         if matrix is not None:
             self.build_partial_solution(matrix)
 
-        def search():
+        self.max_depth = 0
+        def search(depth):
+            self.max_depth = depth if depth > self.max_depth else self.max_depth
+
             # Check if finished
             if self.right == self:
                 # Found a solution. Construct the solution matrix and print it
-                solution_matrix = [[0] * len(matrix[0]) for _ in range(len(matrix))]
+                solution_matrix = [[0] * self.width for _ in range(self.height)]
 
                 for cell in solution_set:
-                    row, col, num = [int(x) for x in cell.name.split(':')]
+                    row, col, num = map(int, cell.name.split(':'))
                     solution_matrix[row][col] = num
 
-                pprint(solution_matrix)
+                #pprint(solution_matrix)
+                for row in solution_matrix:
+                    pprint(row)
+                print('\n')
                 return
 
             # Find the column with the smallest number of cells
@@ -140,6 +146,10 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                     min_size = column.size
                     smallest_col = column
                 column = column.right
+
+            # Check if out of options
+            if smallest_col.size < 1:
+                return
 
             # Cover the chosen column
             self.cover(smallest_col)
@@ -158,7 +168,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                     col_cell = col_cell.right
 
                 # Continue the search recursively
-                search()
+                search(depth + 1)
 
                 # Undo the previous operation
                 row_cell = solution_set.pop()
@@ -172,7 +182,8 @@ class DancingLinks(Cell, metaclass=ABCMeta):
 
             self.uncover(smallest_col)
 
-        search()
+        search(0)
+        print("Max depth: {}".format(self.max_depth))
 
     def add_header(self, column):
         column.left = self.left
@@ -204,32 +215,41 @@ class DancingLinks(Cell, metaclass=ABCMeta):
 
 
 class LatinSquareDLX(DancingLinks):
+    def __init__(self, size=2, *args, **kwargs):
+        self.size = size
+        super(LatinSquareDLX, self).__init__(*args, **kwargs)
+
     @property
     def height(self):
-        return 2
+        return self.size
 
     @property
     def width(self):
-        return 2
+        return self.size
+
+    @property
+    def num_range(self):
+        return self.size
 
     def build_constraints(self):
         name_fmt = "{0}:{1}:{2}"
 
         # First construct the headers
-        # Constraint 1: Some number from {1,2} must appear in every space
+        # Constraint 1: Some number must appear in every space
         for row in range(self.height):
             for col in range(self.width):
                 new_header = Header(name=name_fmt.format(row, col, 'n'))
                 self.add_header(new_header)
 
-        # Constraint 2: Each number from {1,2} must appear in every row in any column
-        for num in [1, 2]:
+        # Constraint 2: Each number from range(self.num_range)
+        # must appear in every row in any column
+        for num in range(self.num_range):
             for row in range(self.height):
                 new_header = Header(name=name_fmt.format(row, 'c', num))
                 self.add_header(new_header)
 
         # Constraint 3: Each number from {1,2} must appear in every column in any row
-        for num in [1, 2]:
+        for num in range(self.num_range):
             for col in range(self.width):
                 new_header = Header(name=name_fmt.format('r', col, num))
                 self.add_header(new_header)
@@ -237,7 +257,7 @@ class LatinSquareDLX(DancingLinks):
         # Next populate the columns
         for row in range(self.height):
             for col in range(self.width):
-                for num in [1, 2]:
+                for num in range(self.num_range):
                     prev = None
                     name = name_fmt.format(row, col, num)
                     column = self.right
@@ -264,21 +284,13 @@ class LatinSquareDLX(DancingLinks):
 
 if __name__ == '__main__':
 
-    ll = LatinSquareDLX()
-    ll.build_constraints()
-    ll.print()
-    print("Covering first column")
-    first_col = ll.right
-    ll.cover(first_col)
-    ll.print()
-    print("Uncovering first column")
-    ll.uncover(first_col)
-    ll.print()
-    print('iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii')
 
     latin_square = [[0, 0],
                     [0, 0]]
-    ll.solve(latin_square)
+
+    ll = LatinSquareDLX(size=5)
+    ll.build_constraints()
+    ll.solve()
 
 
     latin_square_solution_1 = [[1, 2],
