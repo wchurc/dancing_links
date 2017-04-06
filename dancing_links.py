@@ -20,16 +20,13 @@ class Cell(object):
         self.right.left = self.left
         self.left.right = self.right
 
-
     def restore_horizontal(self):
         self.right.left = self
         self.left.right = self
 
-
     def remove_vertical(self):
         self.up.down = self.down
         self.down.up = self.up
-
 
     def restore_vertical(self):
         self.up.down = self
@@ -237,47 +234,44 @@ class LatinSquareDLX(DancingLinks):
 
         # First construct the headers
         # Constraint 1: Some number must appear in every space
-        for row in range(self.height):
-            for col in range(self.width):
-                new_header = Header(name=name_fmt.format(row, col, 'n'))
-                self.add_header(new_header)
+        for row, col in ((row, col) for row in range(self.height) for col in range(self.width)):
+            new_header = Header(name=name_fmt.format(row, col, 'n'))
+            self.add_header(new_header)
 
         # Constraint 2: Each number from self.num_range
         # must appear in every row in any column
-        for num in self.num_range:
-            for row in range(self.height):
-                new_header = Header(name=name_fmt.format(row, 'c', num))
-                self.add_header(new_header)
+        for num, row in ((num, row) for num in self.num_range for row in range(self.height)):
+            new_header = Header(name=name_fmt.format(row, 'c', num))
+            self.add_header(new_header)
 
         # Constraint 3: Each number from self.num_range
         # must appear in every column in any row
-        for num in self.num_range:
-            for col in range(self.width):
-                new_header = Header(name=name_fmt.format('r', col, num))
-                self.add_header(new_header)
+        for num, col in ((num, col) for num in self.num_range for col in range(self.width)):
+            new_header = Header(name=name_fmt.format('r', col, num))
+            self.add_header(new_header)
 
         # Next populate the columns
-        for row in range(self.height):
-            for col in range(self.width):
-                for num in self.num_range:
-                    prev = None
-                    name = name_fmt.format(row, col, num)
-                    column = self.right
-                    while column != self:
-                        col_row, col_col, col_num = column.name.split(':')
-                        if (col_row == str(row) or col_row == 'r') and \
-                           (col_col == str(col) or col_col == 'c') and \
-                           (col_num == str(num) or col_num == 'n'):
-                            cell = Cell(name=name)
-                            column.add_cell(cell)
-                            if prev is not None:
-                                cell.right = prev.right
-                                cell.left = prev
-                                prev.right.left = cell
-                                prev.right = cell
-                            prev = cell
+        for row, col, num in ((row, col, num) for row in range(self.height)
+                                              for col in range(self.width)
+                                              for num in self.num_range):
+            prev = None
+            name = name_fmt.format(row, col, num)
+            column = self.right
+            while column != self:
+                col_row, col_col, col_num = column.name.split(':')
+                if (col_row == str(row) or col_row == 'r') and \
+                   (col_col == str(col) or col_col == 'c') and \
+                   (col_num == str(num) or col_num == 'n'):
+                    cell = Cell(name=name)
+                    column.add_cell(cell)
+                    if prev is not None:
+                        cell.right = prev.right
+                        cell.left = prev
+                        prev.right.left = cell
+                        prev.right = cell
+                    prev = cell
 
-                        column = column.right
+                column = column.right
 
 
     def build_partial_solution(self, matrix):
@@ -310,32 +304,28 @@ class SudokuDLX(DancingLinks):
 
         # First construct the headers
         # Constraint 1: Some number must appear in every space
-        for row in range(self.height):
-            for col in range(self.width):
-                new_header = Header(name=rcn_fmt.format(row, col, 'n'))
-                self.add_header(new_header)
+        for row, col in ((row, col) for row in range(self.height) for col in range(self.width)):
+            new_header = Header(name=rcn_fmt.format(row, col, 'n'))
+            self.add_header(new_header)
 
         # Constraint 2: Each number from num_range
         # must appear in every row in any column
-        for num in self.num_range:
-            for row in range(self.height):
-                new_header = Header(name=rcn_fmt.format(row, 'c', num))
-                self.add_header(new_header)
+        for num, row in ((num, row) for num in self.num_range for row in range(self.height)):
+            new_header = Header(name=rcn_fmt.format(row, 'c', num))
+            self.add_header(new_header)
 
         # Constraint 3: Each number from self.num_range
         # must appear in every column in any row
-        for num in self.num_range:
-            for col in range(self.width):
-                new_header = Header(name=rcn_fmt.format('r', col, num))
-                self.add_header(new_header)
+        for num, col in ((num, col) for num in self.num_range for col in range(self.width)):
+            new_header = Header(name=rcn_fmt.format('r', col, num))
+            self.add_header(new_header)
 
         # Constraint 4: Each number from self.num_range
         # must appear in every zone
         zn_format = "{0}:{1}"
-        for zone in range(9):
-            for num in self.num_range:
-                new_header = Header(name=zn_format.format(zone, num))
-                self.add_header(new_header)
+        for zone, num in ((zone, num) for zone in range(9) for num in self.num_range):
+            new_header = Header(name=zn_format.format(zone, num))
+            self.add_header(new_header)
 
         # Next populate the columns
         for row in range(self.height):
@@ -381,35 +371,35 @@ class SudokuDLX(DancingLinks):
         assert len(matrix) == self.height
 
         solution_set = []
-        for row_index, row in enumerate(matrix):
-            for col_index, num in enumerate(row):
-                if num != 0:
-                    # Find a cell that matches row_index col_index, num
-                    # Dumb Search: This could probably be sped up by looking at the column names
-                    name = "{0}:{1}:{2}".format(row_index, col_index, num)
-                    cell = None
-                    column = self.right
-                    while column != self:
-                        row_cell = column.down
-                        while row_cell != column:
-                            if row_cell.name == name:
-                                cell = row_cell
-                                break
-                            row_cell = row_cell.down
-                        if cell is not None:
+        for row_index, row, col_index, num in ((ri, r, ci, n) for ri, r in enumerate(matrix)
+                                               for ci, n in enumerate(r)):
+            if num != 0:
+                # Find a cell that matches row_index col_index, num
+                # Dumb Search: This could probably be sped up by looking at the column names
+                name = "{0}:{1}:{2}".format(row_index, col_index, num)
+                cell = None
+                column = self.right
+                while column != self:
+                    row_cell = column.down
+                    while row_cell != column:
+                        if row_cell.name == name:
+                            cell = row_cell
                             break
-                        column = column.right
+                        row_cell = row_cell.down
+                    if cell is not None:
+                        break
+                    column = column.right
 
-                    # Add the cell to the solution set
-                    assert cell is not None
-                    solution_set.append(cell)
+                # Add the cell to the solution set
+                assert cell is not None
+                solution_set.append(cell)
 
-                    # Cover all satisfied columns
-                    self.cover(cell.column)
-                    row_cell = cell.right
-                    while row_cell != cell:
-                        self.cover(row_cell.column)
-                        row_cell = row_cell.right
+                # Cover all satisfied columns
+                self.cover(cell.column)
+                row_cell = cell.right
+                while row_cell != cell:
+                    self.cover(row_cell.column)
+                    row_cell = row_cell.right
 
         return solution_set
 
