@@ -238,7 +238,7 @@ class LatinSquareDLX(DancingLinks):
 
     @property
     def num_range(self):
-        return self.size
+        return range(self.size)
 
     def build_constraints(self):
         name_fmt = "{0}:{1}:{2}"
@@ -250,16 +250,16 @@ class LatinSquareDLX(DancingLinks):
                 new_header = Header(name=name_fmt.format(row, col, 'n'))
                 self.add_header(new_header)
 
-        # Constraint 2: Each number from range(self.num_range)
+        # Constraint 2: Each number from self.num_range
         # must appear in every row in any column
-        for num in range(self.num_range):
+        for num in self.num_range:
             for row in range(self.height):
                 new_header = Header(name=name_fmt.format(row, 'c', num))
                 self.add_header(new_header)
 
-        # Constraint 3: Each number from range(self.num_range)
+        # Constraint 3: Each number from self.num_range
         # must appear in every column in any row
-        for num in range(self.num_range):
+        for num in self.num_range:
             for col in range(self.width):
                 new_header = Header(name=name_fmt.format('r', col, num))
                 self.add_header(new_header)
@@ -267,7 +267,7 @@ class LatinSquareDLX(DancingLinks):
         # Next populate the columns
         for row in range(self.height):
             for col in range(self.width):
-                for num in range(self.num_range):
+                for num in self.num_range:
                     prev = None
                     name = name_fmt.format(row, col, num)
                     column = self.right
@@ -304,7 +304,7 @@ class SudokuDLX(DancingLinks):
 
     @property
     def num_range(self):
-        return 9
+        return range(1, 10)
 
     def build_constraints(self):
         def get_zone(row, col):
@@ -323,32 +323,32 @@ class SudokuDLX(DancingLinks):
                 new_header = Header(name=rcn_fmt.format(row, col, 'n'))
                 self.add_header(new_header)
 
-        # Constraint 2: Each number from range(self.num_range)
+        # Constraint 2: Each number from num_range
         # must appear in every row in any column
-        for num in range(self.num_range):
+        for num in self.num_range:
             for row in range(self.height):
                 new_header = Header(name=rcn_fmt.format(row, 'c', num))
                 self.add_header(new_header)
 
-        # Constraint 3: Each number from range(self.num_range)
+        # Constraint 3: Each number from self.num_range
         # must appear in every column in any row
-        for num in range(self.num_range):
+        for num in self.num_range:
             for col in range(self.width):
                 new_header = Header(name=rcn_fmt.format('r', col, num))
                 self.add_header(new_header)
 
-        # Constraint 4: Each number from range(self.num_range)
+        # Constraint 4: Each number from self.num_range
         # must appear in every zone
         zn_format = "{0}:{1}"
         for zone in range(9):
-            for num in range(self.num_range):
+            for num in self.num_range:
                 new_header = Header(name=zn_format.format(zone, num))
                 self.add_header(new_header)
 
         # Next populate the columns
         for row in range(self.height):
             for col in range(self.width):
-                for num in range(self.num_range):
+                for num in self.num_range:
                     prev = None
                     name = rcn_fmt.format(row, col, num)
                     column = self.right
@@ -385,7 +385,41 @@ class SudokuDLX(DancingLinks):
 
 
     def build_partial_solution(self, matrix):
-        pass
+        assert len(matrix[0]) == self.width
+        assert len(matrix) == self.height
+
+        solution_set = []
+        for row_index, row in enumerate(matrix):
+            for col_index, num in enumerate(row):
+                if num != 0:
+                    # Find a cell that matches row_index col_index, num
+                    # Dumb Search: This could probably be sped up by looking at the column names
+                    name = "{0}:{1}:{2}".format(row_index, col_index, num)
+                    cell = None
+                    column = self.right
+                    while column != self:
+                        row_cell = column.down
+                        while row_cell != column:
+                            if row_cell.name == name:
+                                cell = row_cell
+                                break
+                            row_cell = row_cell.down
+                        if cell is not None:
+                            break
+                        column = column.right
+
+                    # Add the cell to the solution set
+                    assert cell is not None
+                    solution_set.append(cell)
+
+                    # Cover all satisfied columns
+                    self.cover(cell.column)
+                    row_cell = cell.right
+                    while row_cell != cell:
+                        self.cover(row_cell.column)
+                        row_cell = row_cell.right
+
+        return solution_set
 
 if __name__ == '__main__':
 
@@ -396,8 +430,6 @@ if __name__ == '__main__':
     #ll = LatinSquareDLX(size=10)
     #ll.build_constraints()
     #ll.solve()
-    s = SudokuDLX()
-    s.solve()
 
 
     latin_square_solution_1 = [[1, 2],
@@ -422,6 +454,23 @@ if __name__ == '__main__':
               [0, 0, 8, 4, 0, 0, 0, 0, 6],
               [0, 2, 0, 0, 5, 0, 0, 8, 0],
               [1, 0, 0, 0, 0, 2, 5, 0, 0]]
+
+    print("Solving easy sudoku")
+    s = SudokuDLX()
+    s.solve(sudoku)
+
+    hard_sudoku = [[8, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [0, 0, 3, 6, 0, 0, 0, 0, 0],
+                   [0, 7, 0, 0, 9, 0, 2, 0, 0],
+                   [0, 5, 0, 0, 0, 7, 0, 0, 0],
+                   [0, 0, 0, 0, 4, 5, 7, 0, 0],
+                   [0, 0, 0, 1, 0, 0, 0, 3, 0],
+                   [0, 0, 1, 0, 0, 0, 0, 6, 8],
+                   [0, 0, 8, 5, 0, 0, 0, 1, 0],
+                   [0, 9, 0, 0, 0, 0, 4, 0, 0]]
+
+    print("Solving hard sudoku")
+    s.solve(hard_sudoku)
 
     sudoku_solution = [[3, 4, 6, 1, 2, 7, 9, 5, 8],
                        [7, 8, 5, 6, 9, 4, 1, 3, 2],
