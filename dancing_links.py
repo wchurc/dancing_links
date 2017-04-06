@@ -113,12 +113,17 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         column.restore_horizontal()
 
     def solve(self, matrix=None):
+
         solution_set = []
 
+        self.clear_links()
+        self.build_constraints()
+
         if matrix is not None:
-            self.build_partial_solution(matrix)
+            solution_set = self.build_partial_solution(matrix)
 
         self.max_depth = 0
+
         def search(depth):
             self.max_depth = depth if depth > self.max_depth else self.max_depth
 
@@ -128,13 +133,15 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                 solution_matrix = [[0] * self.width for _ in range(self.height)]
 
                 for cell in solution_set:
+                    if len(cell.name.split(':')) != 3:
+                        import pdb; pdb.set_trace()
                     row, col, num = map(int, cell.name.split(':'))
                     solution_matrix[row][col] = num
 
                 #pprint(solution_matrix)
                 for row in solution_matrix:
                     pprint(row)
-                print('\n')
+                print("\nMax depth: {}\n".format(self.max_depth))
                 return
 
             # Find the column with the smallest number of cells
@@ -159,6 +166,8 @@ class DancingLinks(Cell, metaclass=ABCMeta):
             while row_cell != smallest_col:
 
                 # Add the chosen row to the solution set
+                if isinstance(row_cell, Header):
+                    pdb.set_trace()
                 solution_set.append(row_cell)
 
                 # Cover every column satisfied by the chosen row
@@ -248,7 +257,8 @@ class LatinSquareDLX(DancingLinks):
                 new_header = Header(name=name_fmt.format(row, 'c', num))
                 self.add_header(new_header)
 
-        # Constraint 3: Each number from {1,2} must appear in every column in any row
+        # Constraint 3: Each number from range(self.num_range)
+        # must appear in every column in any row
         for num in range(self.num_range):
             for col in range(self.width):
                 new_header = Header(name=name_fmt.format('r', col, num))
@@ -282,15 +292,112 @@ class LatinSquareDLX(DancingLinks):
         pass
 
 
+class SudokuDLX(DancingLinks):
+
+    @property
+    def height(self):
+        return 9
+
+    @property
+    def width(self):
+        return 9
+
+    @property
+    def num_range(self):
+        return 9
+
+    def build_constraints(self):
+        def get_zone(row, col):
+            """Helper function to identify the zone a cell belongs to"""
+            lookup = [[0, 1, 2],
+                      [3, 4, 5],
+                      [6, 7, 8]]
+            return str(lookup[row // 3][col // 3])
+
+        rcn_fmt = "{0}:{1}:{2}"
+
+        # First construct the headers
+        # Constraint 1: Some number must appear in every space
+        for row in range(self.height):
+            for col in range(self.width):
+                new_header = Header(name=rcn_fmt.format(row, col, 'n'))
+                self.add_header(new_header)
+
+        # Constraint 2: Each number from range(self.num_range)
+        # must appear in every row in any column
+        for num in range(self.num_range):
+            for row in range(self.height):
+                new_header = Header(name=rcn_fmt.format(row, 'c', num))
+                self.add_header(new_header)
+
+        # Constraint 3: Each number from range(self.num_range)
+        # must appear in every column in any row
+        for num in range(self.num_range):
+            for col in range(self.width):
+                new_header = Header(name=rcn_fmt.format('r', col, num))
+                self.add_header(new_header)
+
+        # Constraint 4: Each number from range(self.num_range)
+        # must appear in every zone
+        zn_format = "{0}:{1}"
+        for zone in range(9):
+            for num in range(self.num_range):
+                new_header = Header(name=zn_format.format(zone, num))
+                self.add_header(new_header)
+
+        # Next populate the columns
+        for row in range(self.height):
+            for col in range(self.width):
+                for num in range(self.num_range):
+                    prev = None
+                    name = rcn_fmt.format(row, col, num)
+                    column = self.right
+                    while column != self:
+                        column_name_items = column.name.split(':')
+                        if len(column_name_items) == 3:
+                            # "r:c:n" has 3 items
+                            col_row, col_col, col_num = column_name_items
+                            if (col_row == str(row) or col_row == 'r') and \
+                               (col_col == str(col) or col_col == 'c') and \
+                               (col_num == str(num) or col_num == 'n'):
+                                cell = Cell(name=name)
+                                column.add_cell(cell)
+                                if prev is not None:
+                                    cell.right = prev.right
+                                    cell.left = prev
+                                    prev.right.left = cell
+                                    prev.right = cell
+                                prev = cell
+                        else:
+                            # "z:n" has 2 items
+                            col_zone, col_num = column_name_items
+                            if get_zone(row, col) == col_zone and str(num) == col_num:
+                                cell = Cell(name=name)
+                                column.add_cell(cell)
+                                if prev is not None:
+                                    cell.right = prev.right
+                                    cell.left = prev
+                                    prev.right.left = cell
+                                    prev.right = cell
+                                prev = cell
+
+                        column = column.right
+
+
+    def build_partial_solution(self, matrix):
+        pass
+
 if __name__ == '__main__':
 
 
     latin_square = [[0, 0],
                     [0, 0]]
 
-    ll = LatinSquareDLX(size=5)
-    ll.build_constraints()
-    ll.solve()
+    #ll = LatinSquareDLX(size=10)
+    #ll.build_constraints()
+    #ll.solve()
+    s = SudokuDLX()
+    s.solve()
 
 
     latin_square_solution_1 = [[1, 2],
