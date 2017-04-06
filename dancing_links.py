@@ -133,15 +133,12 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                 solution_matrix = [[0] * self.width for _ in range(self.height)]
 
                 for cell in solution_set:
-                    if len(cell.name.split(':')) != 3:
-                        import pdb; pdb.set_trace()
                     row, col, num = map(int, cell.name.split(':'))
                     solution_matrix[row][col] = num
 
-                #pprint(solution_matrix)
                 for row in solution_matrix:
                     pprint(row)
-                print("\nMax depth: {}\n".format(self.max_depth))
+
                 return
 
             # Find the column with the smallest number of cells
@@ -166,8 +163,6 @@ class DancingLinks(Cell, metaclass=ABCMeta):
             while row_cell != smallest_col:
 
                 # Add the chosen row to the solution set
-                if isinstance(row_cell, Header):
-                    pdb.set_trace()
                 solution_set.append(row_cell)
 
                 # Cover every column satisfied by the chosen row
@@ -218,9 +213,6 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                 cell = cell.down
 
             column = column.right
-
-    def build_constraints_from_template(self, template):
-        pass
 
 
 class LatinSquareDLX(DancingLinks):
@@ -427,16 +419,8 @@ if __name__ == '__main__':
     latin_square = [[0, 0],
                     [0, 0]]
 
-    #ll = LatinSquareDLX(size=10)
-    #ll.build_constraints()
-    #ll.solve()
-
-
-    latin_square_solution_1 = [[1, 2],
-                               [2, 1]]
-
-    latin_square_solution_1 = [[2, 1],
-                               [1, 2]]
+    ll = LatinSquareDLX(size=2)
+    ll.solve()
 
     exact_cover = [[0, 0, 1, 0, 1, 1, 0],
                    [1, 0, 0, 1, 0, 0, 1],
@@ -455,6 +439,16 @@ if __name__ == '__main__':
               [0, 2, 0, 0, 5, 0, 0, 8, 0],
               [1, 0, 0, 0, 0, 2, 5, 0, 0]]
 
+    sudoku_solution = [[3, 4, 6, 1, 2, 7, 9, 5, 8],
+                       [7, 8, 5, 6, 9, 4, 1, 3, 2],
+                       [2, 1, 9, 3, 8, 5, 4, 6, 7],
+                       [4, 6, 2, 5, 3, 1, 8, 7, 9],
+                       [9, 3, 1, 2, 7, 8, 6, 4, 5],
+                       [8, 5, 7, 9, 4, 6, 2, 1, 3],
+                       [5, 9, 8, 4, 1, 3, 7, 2, 6],
+                       [6, 2, 4, 7, 5, 9, 3, 8, 1],
+                       [1, 7, 3, 8, 6, 2, 5, 9, 4]]
+
     print("Solving easy sudoku")
     s = SudokuDLX()
     s.solve(sudoku)
@@ -472,12 +466,3 @@ if __name__ == '__main__':
     print("Solving hard sudoku")
     s.solve(hard_sudoku)
 
-    sudoku_solution = [[3, 4, 6, 1, 2, 7, 9, 5, 8],
-                       [7, 8, 5, 6, 9, 4, 1, 3, 2],
-                       [2, 1, 9, 3, 8, 5, 4, 6, 7],
-                       [4, 6, 2, 5, 3, 1, 8, 7, 9],
-                       [9, 3, 1, 2, 7, 8, 6, 4, 5],
-                       [8, 5, 7, 9, 4, 6, 2, 1, 3],
-                       [5, 9, 8, 4, 1, 3, 7, 2, 6],
-                       [6, 2, 4, 7, 5, 9, 3, 8, 1],
-                       [1, 7, 3, 8, 6, 2, 5, 9, 4]]
