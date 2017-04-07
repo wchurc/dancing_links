@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 from abc import ABCMeta, abstractmethod
-import math
-from pprint import pprint
 
 
 class Cell(object):
@@ -42,7 +40,6 @@ class Cell(object):
             cell = getattr(cell, direction)
 
 
-
 class Header(Cell):
 
     def __init__(self, *args, **kwargs):
@@ -50,10 +47,8 @@ class Header(Cell):
         self.size = 0
 
     def add_cell(self, cell):
-        cell.down = self
-        cell.up = self.up
-        self.up.down = cell
-        self.up = cell
+        cell.down, cell.up = self, self.up
+        self.up.down, self.up = cell, cell
 
         cell.column = self
         self.size += 1
@@ -128,7 +123,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                     solution_matrix[row][col] = num
 
                 for row in solution_matrix:
-                    pprint(row)
+                    print(row)
 
                 return solution_matrix
 
@@ -200,16 +195,11 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         return solution_set
 
     def add_header(self, column):
-        column.left = self.left
-        column.right = self
-        self.left.right = column
-        self.left = column
+        column.left, column.right = self.left, self
+        self.left.right, self.left = column, column
 
     def clear_links(self):
-        self.left = self
-        self.right = self
-        self.up = self
-        self.down = self
+        self.left, self.right, self.up, self.down = self, self, self, self
 
     def print(self):
 
