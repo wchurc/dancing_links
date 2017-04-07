@@ -5,6 +5,7 @@ from pprint import pprint
 
 
 class Cell(object):
+
     def __init__(self, name=None, column=None, left=None, right=None, up=None, down=None):
         # The name of a cell is a string in the format of
         # "row:column:number" where matrix[row, column] = number
@@ -43,6 +44,7 @@ class Cell(object):
 
 
 class Header(Cell):
+
     def __init__(self, *args, **kwargs):
         super(Header, self).__init__(*args, **kwargs)
         self.size = 0
@@ -59,19 +61,21 @@ class Header(Cell):
 
 class DancingLinks(Cell, metaclass=ABCMeta):
 
+    def __init__(self, matrix_size=9, *args, **kwargs):
+        self._size = matrix_size
+        super(DancingLinks, self).__init__(*args, **kwargs)
+
     @property
-    @abstractmethod
     def height(self):
-        pass
+        return self._size
 
     @property
-    @abstractmethod
     def width(self):
-        pass
+        return self._size
 
-    @abstractmethod
-    def build_constraints(self):
-        pass
+    @property
+    def num_range(self):
+        return range(1, self._size + 1)
 
     def cover(self, column):
         # Unlink the column header
@@ -217,21 +221,6 @@ class DancingLinks(Cell, metaclass=ABCMeta):
 
 
 class LatinSquareDLX(DancingLinks):
-    def __init__(self, size=2, *args, **kwargs):
-        self._size = size
-        super(LatinSquareDLX, self).__init__(*args, **kwargs)
-
-    @property
-    def height(self):
-        return self._size
-
-    @property
-    def width(self):
-        return self._size
-
-    @property
-    def num_range(self):
-        return range(1, self._size + 1)
 
     def build_constraints(self):
         name_fmt = "{0}:{1}:{2}"
@@ -277,18 +266,6 @@ class LatinSquareDLX(DancingLinks):
 
 
 class SudokuDLX(DancingLinks):
-
-    @property
-    def height(self):
-        return 9
-
-    @property
-    def width(self):
-        return 9
-
-    @property
-    def num_range(self):
-        return range(1, 10)
 
     def build_constraints(self):
         def get_zone(row, col):
