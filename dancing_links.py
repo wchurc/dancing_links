@@ -101,10 +101,13 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         solution_set = []
 
         self.clear_links()
-        self.build_constraints()
 
         if matrix is not None:
+            self._size = len(matrix)
+            self.build_constraints()
             solution_set = self.build_partial_solution(matrix)
+        else:
+            self.build_constraints()
 
         self.max_depth = 0
 
@@ -215,20 +218,20 @@ class DancingLinks(Cell, metaclass=ABCMeta):
 
 class LatinSquareDLX(DancingLinks):
     def __init__(self, size=2, *args, **kwargs):
-        self.size = size
+        self._size = size
         super(LatinSquareDLX, self).__init__(*args, **kwargs)
 
     @property
     def height(self):
-        return self.size
+        return self._size
 
     @property
     def width(self):
-        return self.size
+        return self._size
 
     @property
     def num_range(self):
-        return range(self.size)
+        return range(1, self._size + 1)
 
     def build_constraints(self):
         name_fmt = "{0}:{1}:{2}"
