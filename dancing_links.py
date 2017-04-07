@@ -123,7 +123,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                 for row in solution_matrix:
                     pprint(row)
 
-                return
+                return solution_matrix
 
             # Find the column with the smallest number of cells
             smallest_col = min(self.walk(), key=lambda x: x.size)
@@ -146,7 +146,11 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                     self.cover(col_cell.column)
 
                 # Continue the search recursively
-                search(depth + 1)
+                answer = search(depth + 1) or None
+
+                # Quit early if you have a solution
+                if answer:
+                    return answer
 
                 # Undo the previous operation
                 row_cell = solution_set.pop()
@@ -156,8 +160,9 @@ class DancingLinks(Cell, metaclass=ABCMeta):
 
             self.uncover(smallest_col)
 
-        search(0)
+        answer = search(0)
         print("Max depth: {}".format(self.max_depth))
+        return answer
 
     def build_partial_solution(self, matrix):
         assert len(matrix[0]) == self.width
