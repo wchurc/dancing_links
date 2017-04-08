@@ -102,21 +102,25 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         self._size = len(matrix)
         self.build_constraints()
 
-        answer = self._solve(matrix)
-
+        try:
+            answer = next(self._solve(matrix))
+        except StopIteration:
+            return None
         return answer
 
-    def generate(self, matrix=None):
-        pass
+    def generate(self, size=9, matrix=None):
+        self.clear_links()
+
+        self._size = size
+        self.build_constraints()
+
+        return self._solve(matrix)
 
     def _solve(self, matrix=None):
 
         solution_set = [] if matrix is None else self.build_partial_solution(matrix)
 
-        self.max_depth = 0
-
-        def search(depth):
-            self.max_depth = depth if depth > self.max_depth else self.max_depth
+        def search():
 
             # Check if finished
             if self.right == self:
@@ -127,10 +131,10 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                     row, col, num = map(int, cell.name.split(':'))
                     solution_matrix[row][col] = num
 
-                for row in solution_matrix:
-                    print(row)
+                yield solution_matrix
 
-                return solution_matrix
+            if self.right == self:
+                return
 
             # Find the column with the smallest number of cells
             smallest_col = min(self.walk(), key=lambda x: x.size)
@@ -153,11 +157,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                     self.cover(col_cell.column)
 
                 # Continue the search recursively
-                answer = search(depth + 1) or None
-
-                # Quit early if you have a solution
-                if answer:
-                    return answer
+                yield from search()
 
                 # Undo the previous operation
                 row_cell = solution_set.pop()
@@ -167,9 +167,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
 
             self.uncover(smallest_col)
 
-        answer = search(0)
-        print("Max depth: {}".format(self.max_depth))
-        return answer
+        yield from search()
 
     def build_partial_solution(self, matrix):
         assert len(matrix[0]) == self.width
