@@ -56,8 +56,8 @@ class Header(Cell):
 
 class DancingLinks(Cell, metaclass=ABCMeta):
 
-    def __init__(self, matrix_size=9, *args, **kwargs):
-        self._size = matrix_size
+    def __init__(self, *args, **kwargs):
+        self._size = 9
         super(DancingLinks, self).__init__(*args, **kwargs)
 
     @property
@@ -95,18 +95,23 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         # Restore the column header
         column.restore_horizontal()
 
-    def solve(self, matrix=None):
-
-        solution_set = []
+    def solve(self, matrix):
 
         self.clear_links()
 
-        if matrix is not None:
-            self._size = len(matrix)
-            self.build_constraints()
-            solution_set = self.build_partial_solution(matrix)
-        else:
-            self.build_constraints()
+        self._size = len(matrix)
+        self.build_constraints()
+
+        answer = self._solve(matrix)
+
+        return answer
+
+    def generate(self, matrix=None):
+        pass
+
+    def _solve(self, matrix=None):
+
+        solution_set = [] if matrix is None else self.build_partial_solution(matrix)
 
         self.max_depth = 0
 
