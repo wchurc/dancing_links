@@ -1,9 +1,12 @@
-#!/usr/bin/env python3
+"""
+This module an implementation of Donald Knuth's dancing links algorithm that
+can be used to solve Sudoku, Latin Square, or other exact cover problems.
+"""
 from abc import ABCMeta, abstractmethod
 
 
 class Cell(object):
-
+    """A Cell is a single element of a dancing links matrix."""
     def __init__(self, name=None, column=None, left=None, right=None, up=None, down=None):
         # The name of a cell is a string in the format of
         # "row:column:number" where matrix[row, column] = number
@@ -41,7 +44,8 @@ class Cell(object):
 
 
 class Header(Cell):
-
+    """A Header is the handle of a column in a dancing links matrix. Every
+    column has a header which maintains a count of how many Cells it contains."""
     def __init__(self, *args, **kwargs):
         super(Header, self).__init__(*args, **kwargs)
         self.size = 0
@@ -55,7 +59,19 @@ class Header(Cell):
 
 
 class DancingLinks(Cell, metaclass=ABCMeta):
+    """A 2 dimensional, circular, doubly-linked list of Cells.
 
+    Each column in the dancing links matrix represents a single constraint
+    (e.g. constraint_x is "Column 0 on a sudoku board contains the number 9").
+
+    Each row represents a state (e.g. state_x is "Position (0,0) on a sudoku
+    board contains the number 9"). state_x satisfies constraint_x.
+
+    The constraints must be satisfied by one and only one state (the state
+    "Position (0,1) contains the number 9" would also satisfy constraint_x, but
+    it would create an invalid sudoku board.
+
+    Subclasses of DancingLinks must define a build_constraints method."""
     def __init__(self, *args, **kwargs):
         self._size = 9
         super(DancingLinks, self).__init__(*args, **kwargs)
@@ -72,7 +88,14 @@ class DancingLinks(Cell, metaclass=ABCMeta):
     def num_range(self):
         return range(1, self._size + 1)
 
+    @abstractmethod
+    def build_constraints(self):
+        """Constructs the constraint matrix."""
+        pass
+
     def cover(self, column):
+        """A reversible operation that removes a column and all rows it is
+        linked to."""
         # Unlink the column header
         column.remove_horizontal()
 
@@ -84,7 +107,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
                 row_cell.column.size -= 1
 
     def uncover(self, column):
-
+        """Reverses a cover operation."""
         for col_cell in column.walk('up'):
             for row_cell in col_cell.walk('left'):
 
@@ -96,7 +119,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         column.restore_horizontal()
 
     def solve(self, matrix):
-
+        """Returns the first correct solution found."""
         self.clear_links()
 
         self._size = len(matrix)
@@ -109,6 +132,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         return answer
 
     def generate(self, size=9, matrix=None):
+        """Returns a generator of correct solutions."""
         self.clear_links()
 
         self._size = size
@@ -117,7 +141,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         return self._solve(matrix)
 
     def _solve(self, matrix=None):
-
+        """Generates every possible correct solution."""
         solution_set = [] if matrix is None else self.build_partial_solution(matrix)
 
         def search():
@@ -142,7 +166,6 @@ class DancingLinks(Cell, metaclass=ABCMeta):
             # Check if out of options
             if smallest_col.size < 1:
                 return
-
             # Cover the chosen column
             self.cover(smallest_col)
 
@@ -170,6 +193,8 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         yield from search()
 
     def build_partial_solution(self, matrix):
+        """Updates the constraint matrix to conform to what is supplied in the
+        matrix parameter."""
         assert len(matrix[0]) == self.width
         assert len(matrix) == self.height
 
@@ -202,6 +227,7 @@ class DancingLinks(Cell, metaclass=ABCMeta):
         self.left.right, self.left = column, column
 
     def clear_links(self):
+        """Clears all links on the root node."""
         self.left, self.right, self.up, self.down = self, self, self, self
 
     def print(self):
